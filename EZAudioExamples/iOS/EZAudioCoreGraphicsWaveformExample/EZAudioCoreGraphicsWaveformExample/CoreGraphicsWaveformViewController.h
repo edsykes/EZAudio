@@ -14,7 +14,10 @@
 /**
  We will allow this view controller to act as an EZMicrophoneDelegate. This is how we listen for the microphone callback.
  */
-@interface CoreGraphicsWaveformViewController : UIViewController <EZMicrophoneDelegate>
+@interface CoreGraphicsWaveformViewController : UIViewController <EZMicrophoneDelegate>{
+    __block int totalCount;
+    __block float totalLoudness;
+}
 
 #pragma mark - Components
 /**
@@ -26,6 +29,7 @@
  The microphone component
  */
 @property (nonatomic,strong) EZMicrophone *microphone;
+
 
 #pragma mark - Actions
 /**
