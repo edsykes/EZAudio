@@ -48,20 +48,46 @@
     totalCount = 0;
     totalLoudness = 0;
     
-    NSDictionary* headers = @{@"accept": @"application/json"};
-    NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
+    NSUserDefaults *loadPrefs = [NSUserDefaults standardUserDefaults];
+    NSString *textToLoad = [loadPrefs stringForKey:@"streamid"];
+    if(textToLoad == nil){
+        NSLog(@"No stream id found, creating a new one");
+        NSDictionary* headers = @{@"accept": @"application/json"};
+        NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
+        
+        UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
+            [request setUrl:@"http://localhost:5000/stream"];
+            [request setHeaders:headers];
+            [request setParameters:parameters];
+        }] asJson];
+        
+        if (response.code == 200) {
+            NSLog(@"Successfully made rest call: %d", response.code);
+            
+            sid = response.body.JSONObject[@"streamid"];
+            writeToken = response.body.JSONObject[@"readToken"];
+            readToken = response.body.JSONObject[@"writeToken"];
+
+            NSLog(@"streamid: %@", sid);
+            NSLog(@"writeToken: %@", writeToken);
+            NSLog(@"readToken: %@", readToken);
+
+            NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
+            [prefs setObject: sid forKey:@"streamid"];
+            [prefs setObject: writeToken forKey:@"writeToken"];
+            [prefs setObject: readToken forKey:@"readToken"];
+        }
+        else{
+            NSLog(@"Couldn't create stream, stream is blank, nothing will be persisted to QD");
+        }
+    }
+    else{
+        sid = [loadPrefs stringForKey:@"streamid"];
+        readToken = [loadPrefs stringForKey:@"streamid"];
+        writeToken = [loadPrefs stringForKey:@"streamid"];
+    }
     
-    UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
-        [request setUrl:@"http://localhost:5000/stream"];
-        [request setHeaders:headers];
-        [request setParameters:parameters];
-    }] asJson];
-    
-    NSLog(@"%@", response);
-    
-    NSLog(@"streamid: %@", response.body.JSONObject[@"streamid"]);
-    NSLog(@"writeToken: %@", response.body.JSONObject[@"writeToken"]);
-    NSLog(@"readToken: %@", response.body.JSONObject[@"readToken"]);
+    NSLog(@"stream id loaded: %@", textToLoad);
 }
 
 #pragma mark - Customize the Audio Plot

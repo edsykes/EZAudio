@@ -17,6 +17,9 @@
 @interface CoreGraphicsWaveformViewController : UIViewController <EZMicrophoneDelegate>{
     __block int totalCount;
     __block float totalLoudness;
+    NSString *sid;
+    NSString *writeToken;
+    NSString *readToken;
 }
 
 #pragma mark - Components
