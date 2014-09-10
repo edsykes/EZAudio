@@ -45,4 +45,6 @@
  */
 -(IBAction)toggleMicrophone:(id)sender;
 
+-(IBAction)reset1Self:(id)sender;
+
 @end

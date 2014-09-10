@@ -143,6 +143,13 @@
   }
 }
 
+-(void)reset1Self:(id)sender {
+    NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
+    [prefs removeObjectForKey:@"streamid"];
+    [prefs removeObjectForKey:@"writeToken"];
+    [prefs removeObjectForKey:@"readToken"];
+}
+
 #pragma mark - Action Extensions
 /*
  Give the visualization of the current buffer (this is almost exactly the openFrameworks audio input eample)
