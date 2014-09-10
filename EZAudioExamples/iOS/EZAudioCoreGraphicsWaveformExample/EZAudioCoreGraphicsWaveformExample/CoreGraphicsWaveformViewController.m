@@ -8,6 +8,7 @@
 
 #import "CoreGraphicsWaveformViewController.h"
 #import <Accelerate/Accelerate.h>
+#import <UNIRest.h>
 
 @interface CoreGraphicsWaveformViewController (){
   float scale;
@@ -46,6 +47,17 @@
     self.microphone = [EZMicrophone microphoneWithDelegate:self];
     totalCount = 0;
     totalLoudness = 0;
+    
+    NSDictionary* headers = @{@"accept": @"application/json"};
+    NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
+    
+    UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
+        [request setUrl:@"http://localhost:5000/stream"];
+        [request setHeaders:headers];
+        [request setParameters:parameters];
+    }] asJson];
+    
+    NSLog(@"%@", response);
 }
 
 #pragma mark - Customize the Audio Plot
