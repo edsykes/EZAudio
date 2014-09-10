@@ -58,6 +58,10 @@
     }] asJson];
     
     NSLog(@"%@", response);
+    
+    NSLog(@"streamid: %@", response.body.JSONObject[@"streamid"]);
+    NSLog(@"writeToken: %@", response.body.JSONObject[@"writeToken"]);
+    NSLog(@"readToken: %@", response.body.JSONObject[@"readToken"]);
 }
 
 #pragma mark - Customize the Audio Plot
