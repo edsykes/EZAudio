@@ -23,6 +23,7 @@
     NSString *readToken;
     CLLocationManager *locationManager;
     CLLocation *currentLocation;
+    NSDate* sampleStart;
 }
 
 #pragma mark - Components

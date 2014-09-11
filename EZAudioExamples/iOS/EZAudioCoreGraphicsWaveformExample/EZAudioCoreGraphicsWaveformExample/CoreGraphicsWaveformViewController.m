@@ -56,7 +56,7 @@
         NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
         
         UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
-            [request setUrl:@"http://10.0.1.15:5000/stream"];
+            [request setUrl:@"http://location:5000/stream"];
             [request setHeaders:headers];
             [request setParameters:parameters];
         }] asJson];
@@ -208,6 +208,14 @@ withNumberOfChannels:(UInt32)numberOfChannels {
   // See the Thread Safety warning above, but in a nutshell these callbacks happen on a separate audio thread. We wrap any UI updating in a GCD block on the main thread to avoid blocking that audio flow.
     
     dispatch_async(dispatch_get_main_queue(),^{
+        
+        // Setup the sample start time
+        if(sampleStart == nil){
+            sampleStart = [NSDate date];
+        }
+        
+        NSDate* currentTime = [NSDate date];
+        
         //NSLog(@"buffer received %d %f", totalCount, totalLoudness);
         float rawMeanVal = 0.0;
         float one = 1;
@@ -232,17 +240,21 @@ withNumberOfChannels:(UInt32)numberOfChannels {
         //  NSLog(@"mean is %10f (raw) %10f (db)", rawMeanVal, dbMeanVal);
         totalDba += sampleMeanDba;
         totalDbaSampleCount = totalDbaSampleCount + 1;
-        if(totalDbaSampleCount > 500){
-            NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
-            dateFormatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
-            
-            NSDate *now = [NSDate date];
-            NSString *formattedDateString = [dateFormatter stringFromDate:now];
+        
+        NSTimeInterval sampleDuration = [currentTime timeIntervalSinceDate:sampleStart];
+        if(sampleDuration > 5.0){
+
+            NSDateFormatter* eventDateTime = [[NSDateFormatter alloc] init];
+            eventDateTime.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+
+            NSString *formattedDateString = [eventDateTime stringFromDate:sampleStart];
             NSLog(@"ISO-8601 date: %@", formattedDateString);
+            
+            sampleStart = currentTime;
             
             NSDictionary* headers = @{@"Content-Type": @"application/json",
                                       @"Authorization": writeToken};
-            NSString *url = [NSString stringWithFormat:@"http://10.0.1.15:5000/stream/%@/event", sid];
+            NSString *url = [NSString stringWithFormat:@"http://localhost:5000/stream/%@/event", sid];
             [[UNIRest postEntity:^(UNIBodyRequest* request) {
                 [request setUrl:url];
                 [request setHeaders:headers];
@@ -255,10 +267,10 @@ withNumberOfChannels:(UInt32)numberOfChannels {
                                                          @"long": [NSNumber numberWithDouble:currentLocation.coordinate.longitude]
                                                          },
                                          @"objectTags":@[@"1selfiossoundmeter"],
-                                         @"properties": @{@"dba": dba, @"dbspl": dbspl, @"durationms": [NSNumber numberWithFloat: 3000]},
+                                         @"properties": @{@"dba": dba, @"dbspl": dbspl, @"durationMs": [NSNumber numberWithFloat: sampleDuration * 1000]},
                                          @"source": @"1Self iOS Soundmeter",
                                          @"streamid":sid,
-                                         @"version": @"0.0.1.alpha"
+                                         @"version": @"0.0.1.aldpha"
                                          };
                 [request setBody:[NSJSONSerialization dataWithJSONObject:event options:0 error:nil]];
             }] asJsonAsync:^(UNIHTTPJsonResponse* response, NSError *error) {
