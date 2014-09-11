@@ -45,8 +45,8 @@
 -(void)initializeViewController {
   // Create an instance of the microphone and tell it to use this view controller instance as the delegate
     self.microphone = [EZMicrophone microphoneWithDelegate:self];
-    totalCount = 0;
-    totalLoudness = 0;
+    totalDbaSampleCount = 0;
+    totalDba = 0;
     
     NSUserDefaults *loadPrefs = [NSUserDefaults standardUserDefaults];
     NSString *textToLoad = [loadPrefs stringForKey:@"streamid"];
@@ -56,7 +56,7 @@
         NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
         
         UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
-            [request setUrl:@"http://localhost:5000/stream"];
+            [request setUrl:@"http://10.0.1.15:5000/stream"];
             [request setHeaders:headers];
             [request setParameters:parameters];
         }] asJson];
@@ -65,8 +65,8 @@
             NSLog(@"Successfully made rest call: %d", response.code);
             
             sid = response.body.JSONObject[@"streamid"];
-            writeToken = response.body.JSONObject[@"readToken"];
-            readToken = response.body.JSONObject[@"writeToken"];
+            writeToken = response.body.JSONObject[@"writeToken"];
+            readToken = response.body.JSONObject[@"readToken"];
 
             NSLog(@"streamid: %@", sid);
             NSLog(@"writeToken: %@", writeToken);
@@ -83,11 +83,31 @@
     }
     else{
         sid = [loadPrefs stringForKey:@"streamid"];
-        readToken = [loadPrefs stringForKey:@"streamid"];
-        writeToken = [loadPrefs stringForKey:@"streamid"];
+        readToken = [loadPrefs stringForKey:@"readToken"];
+        writeToken = [loadPrefs stringForKey:@"writeToken"];
     }
     
+    locationManager = [[CLLocationManager alloc] init];
+	locationManager.delegate = self;
+	
+	if ([CLLocationManager locationServicesEnabled]) {
+		[locationManager startUpdatingLocation];
+	} else {
+		NSLog(@"Location services is not enabled");
+	}
+    
     NSLog(@"stream id loaded: %@", textToLoad);
+}
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateToLocation:(CLLocation *)newLocation fromLocation:(CLLocation *)oldLocation {
+	self->currentLocation = newLocation;
+	
+	NSLog(@"Latidude %f Longitude: %f", newLocation.coordinate.latitude, newLocation.coordinate.longitude);
+}
+
+- (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
+	[locationManager stopUpdatingLocation];
+	NSLog(@"Update failed with error: %@", error);
 }
 
 #pragma mark - Customize the Audio Plot
@@ -201,26 +221,55 @@ withNumberOfChannels:(UInt32)numberOfChannels {
             return;
         }
         
-        float dbMeanVal = 0;
-        vDSP_vdbcon(&rawMeanVal, 1, &one, &dbMeanVal, 1, 1, 1);
+        float sampleMeanDba = 0;
+        vDSP_vdbcon(&rawMeanVal, 1, &one, &sampleMeanDba, 1, 1, 1);
         
-        if(dbMeanVal < -10000000){
+        if(sampleMeanDba < -10000000){
             //    NSLog(@"Skipping bad db value");
             return;
         }
-        
-        if(dbMeanVal < -200){
-            int i = 0;
-            ++i;
-        }
+       
         //  NSLog(@"mean is %10f (raw) %10f (db)", rawMeanVal, dbMeanVal);
-        totalLoudness += dbMeanVal;
-        totalCount = totalCount + 1;
-        if(totalCount > 100){
-            totalCount = 0;
-            totalLoudness = 0;
+        totalDba += sampleMeanDba;
+        totalDbaSampleCount = totalDbaSampleCount + 1;
+        if(totalDbaSampleCount > 500){
+            NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
+            dateFormatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+            
+            NSDate *now = [NSDate date];
+            NSString *formattedDateString = [dateFormatter stringFromDate:now];
+            NSLog(@"ISO-8601 date: %@", formattedDateString);
+            
+            NSDictionary* headers = @{@"Content-Type": @"application/json",
+                                      @"Authorization": writeToken};
+            NSString *url = [NSString stringWithFormat:@"http://10.0.1.15:5000/stream/%@/event", sid];
+            [[UNIRest postEntity:^(UNIBodyRequest* request) {
+                [request setUrl:url];
+                [request setHeaders:headers];
+                NSNumber *dba = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount];
+                NSNumber *dbspl = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount + 150];
+                NSDictionary *event = @{ @"dateTime":   formattedDateString,
+                                         @"eventDateTime": formattedDateString,
+                                         @"actionTags": @[@"sample"],
+                                         @"location": @{ @"lat": [NSNumber numberWithDouble:currentLocation.coordinate.latitude],
+                                                         @"long": [NSNumber numberWithDouble:currentLocation.coordinate.longitude]
+                                                         },
+                                         @"objectTags":@[@"1selfiossoundmeter"],
+                                         @"properties": @{@"dba": dba, @"dbspl": dbspl, @"durationms": [NSNumber numberWithFloat: 3000]},
+                                         @"source": @"1Self iOS Soundmeter",
+                                         @"streamid":sid,
+                                         @"version": @"0.0.1.alpha"
+                                         };
+                [request setBody:[NSJSONSerialization dataWithJSONObject:event options:0 error:nil]];
+            }] asJsonAsync:^(UNIHTTPJsonResponse* response, NSError *error) {
+                // This is the asyncronous callback block
+                int result = response.code;
+                NSLog(@"Tried to send event with result %d", result);
+            }];
+            totalDbaSampleCount = 0;
+            totalDba = 0;
         }
-        NSLog(@"count %d %f (raw: %f)", totalCount, totalLoudness / totalCount + 150, dbMeanVal);
+        NSLog(@"count %d %f (raw: %f)", totalDbaSampleCount, totalDba / totalDbaSampleCount + 150, sampleMeanDba);
     // All the audio plot needs is the buffer data (float*) and the size. Internally the audio plot will handle all the drawing related code, history management, and freeing its own resources. Hence, one badass line of code gets you a pretty plot :)
     [self.audioPlot updateBuffer:buffer[0] withBufferSize:bufferSize];
       
