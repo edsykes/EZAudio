@@ -56,7 +56,7 @@
         NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
         
         UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
-            [request setUrl:@"http://location:5000/stream"];
+            [request setUrl:@"http://localhost:5000/stream"];
             [request setHeaders:headers];
             [request setParameters:parameters];
         }] asJson];
@@ -254,7 +254,7 @@ withNumberOfChannels:(UInt32)numberOfChannels {
             
             NSDictionary* headers = @{@"Content-Type": @"application/json",
                                       @"Authorization": writeToken};
-            NSString *url = [NSString stringWithFormat:@"http://localhost:5000/stream/%@/event", sid];
+            NSString *url = [NSString stringWithFormat:@"http://localhost:5000/stream/%@/event/realtime", sid];
             [[UNIRest postEntity:^(UNIBodyRequest* request) {
                 [request setUrl:url];
                 [request setHeaders:headers];
