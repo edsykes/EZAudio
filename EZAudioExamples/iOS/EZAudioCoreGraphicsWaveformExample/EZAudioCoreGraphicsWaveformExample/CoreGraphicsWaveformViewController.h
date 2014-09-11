@@ -24,6 +24,8 @@
     CLLocationManager *locationManager;
     CLLocation *currentLocation;
     NSDate* sampleStart;
+    NSString* urlStem;
+    int samplesSent;
 }
 
 #pragma mark - Components
@@ -48,7 +50,7 @@
  Toggles the microphone on and off. When the microphone is on it will send its delegate (aka this view controller) the audio data in various ways (check out the EZMicrophoneDelegate documentation for more details);
  */
 -(IBAction)toggleMicrophone:(id)sender;
-
 -(IBAction)reset1Self:(id)sender;
+-(IBAction)register1Self:(id)sender;
 
 @end

@@ -15,6 +15,10 @@
 }
 #pragma mark - UI Extras
 @property (nonatomic,weak) IBOutlet UILabel *microphoneTextLabel;
+@property (nonatomic,weak) IBOutlet UILabel *lblDba;
+@property (nonatomic,weak) IBOutlet UILabel *lblDbspl;
+@property (nonatomic,weak) IBOutlet UILabel *lblsamplesSent;
+@property (nonatomic,weak) IBOutlet UILabel *lbl;
 @end
 
 @implementation CoreGraphicsWaveformViewController
@@ -47,6 +51,8 @@
     self.microphone = [EZMicrophone microphoneWithDelegate:self];
     totalDbaSampleCount = 0;
     totalDba = 0;
+    samplesSent = 0;
+    urlStem = @"http://localhost:5000";
     
     NSUserDefaults *loadPrefs = [NSUserDefaults standardUserDefaults];
     NSString *textToLoad = [loadPrefs stringForKey:@"streamid"];
@@ -56,7 +62,7 @@
         NSDictionary* parameters = @{@"parameter": @"value", @"foo": @"bar"};
         
         UNIHTTPJsonResponse* response = [[UNIRest post:^(UNISimpleRequest* request) {
-            [request setUrl:@"http://localhost:5000/stream"];
+            [request setUrl: [NSString stringWithFormat: @"%@/stream", urlStem]];
             [request setHeaders:headers];
             [request setParameters:parameters];
         }] asJson];
@@ -170,6 +176,11 @@
     [prefs removeObjectForKey:@"readToken"];
 }
 
+-(void)register1Self:(id)sender{
+    NSString* registerUrl = [NSString stringWithFormat: @"%@/dashboard?streamId=%@&readToken=%@", urlStem, sid, readToken];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:registerUrl]];
+}
+
 #pragma mark - Action Extensions
 /*
  Give the visualization of the current buffer (this is almost exactly the openFrameworks audio input eample)
@@ -240,6 +251,11 @@ withNumberOfChannels:(UInt32)numberOfChannels {
         //  NSLog(@"mean is %10f (raw) %10f (db)", rawMeanVal, dbMeanVal);
         totalDba += sampleMeanDba;
         totalDbaSampleCount = totalDbaSampleCount + 1;
+        NSNumber *dba = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount];
+        NSNumber *dbspl = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount + 150];
+        self.lblDba.text = [NSString stringWithFormat: @"%@ dba", dba];
+        self.lblDbspl.text = [NSString stringWithFormat: @"%@ dbspl", dbspl];
+        self.lblsamplesSent.text = [NSString stringWithFormat: @"%d samples sent", samplesSent];
         
         NSTimeInterval sampleDuration = [currentTime timeIntervalSinceDate:sampleStart];
         if(sampleDuration > 5.0){
@@ -258,8 +274,7 @@ withNumberOfChannels:(UInt32)numberOfChannels {
             [[UNIRest postEntity:^(UNIBodyRequest* request) {
                 [request setUrl:url];
                 [request setHeaders:headers];
-                NSNumber *dba = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount];
-                NSNumber *dbspl = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount + 150];
+                
                 NSDictionary *event = @{ @"dateTime":   formattedDateString,
                                          @"eventDateTime": formattedDateString,
                                          @"actionTags": @[@"sample"],
@@ -277,6 +292,9 @@ withNumberOfChannels:(UInt32)numberOfChannels {
                 // This is the asyncronous callback block
                 int result = response.code;
                 NSLog(@"Tried to send event with result %d", result);
+                if(result == 200){
+                    samplesSent += 1;
+                }
             }];
             totalDbaSampleCount = 0;
             totalDba = 0;
