@@ -23,11 +23,16 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#import <Foundation/Foundation.h>
 #import "TargetConditionals.h"
 #import "EZPlot.h"
 
 #if TARGET_OS_IPHONE
 #import <GLKit/GLKit.h>
+#import <OpenGLES/EAGL.h>
+#import <OpenGLES/EAGLDrawable.h>
+#import <OpenGLES/ES1/gl.h>
+#import <OpenGLES/ES1/glext.h>
 @class EZAudioPlotGLKViewController;
 #elif TARGET_OS_MAC
 #import <Cocoa/Cocoa.h>

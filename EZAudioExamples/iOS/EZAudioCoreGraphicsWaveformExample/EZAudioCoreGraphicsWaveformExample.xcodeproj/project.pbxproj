@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2009C09019E97ED6009756A1 /* middle.png in Resources */ = {isa = PBXBuildFile; fileRef = 2009C08D19E97ED6009756A1 /* middle.png */; };
+		2009C09219E97ED6009756A1 /* inner.png in Resources */ = {isa = PBXBuildFile; fileRef = 2009C08F19E97ED6009756A1 /* inner.png */; };
+		2009C09419E97FA2009756A1 /* outer.png in Resources */ = {isa = PBXBuildFile; fileRef = 2009C09319E97FA2009756A1 /* outer.png */; };
 		20686B8A19BDF1520070AA66 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20686B8919BDF1520070AA66 /* OpenGLES.framework */; };
 		2076C53219BDFE410018A5CF /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2076C53119BDFE410018A5CF /* Accelerate.framework */; };
 		2076C53419C03FF80018A5CF /* Pods.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 2076C53319C03FF80018A5CF /* Pods.xcconfig */; };
@@ -55,6 +58,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2009C08D19E97ED6009756A1 /* middle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = middle.png; sourceTree = "<group>"; };
+		2009C08F19E97ED6009756A1 /* inner.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = inner.png; sourceTree = "<group>"; };
+		2009C09319E97FA2009756A1 /* outer.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = outer.png; sourceTree = "<group>"; };
 		20686B8919BDF1520070AA66 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		2076C53119BDFE410018A5CF /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		2076C53319C03FF80018A5CF /* Pods.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Pods.xcconfig; path = ../Pods/Pods.xcconfig; sourceTree = "<group>"; };
@@ -138,6 +144,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2034AAAF19E8614900F925BA /* images */ = {
+			isa = PBXGroup;
+			children = (
+				2009C09319E97FA2009756A1 /* outer.png */,
+				2009C08D19E97ED6009756A1 /* middle.png */,
+				2009C08F19E97ED6009756A1 /* inner.png */,
+			);
+			name = images;
+			sourceTree = "<group>";
+		};
 		94056F71185E593500EB94BA = {
 			isa = PBXGroup;
 			children = (
@@ -194,6 +210,7 @@
 		94056F84185E593500EB94BA /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				2034AAAF19E8614900F925BA /* images */,
 				94056F85185E593500EB94BA /* EZAudioCoreGraphicsWaveformExample-Info.plist */,
 				94056F86185E593500EB94BA /* InfoPlist.strings */,
 				94056F89185E593500EB94BA /* main.m */,
@@ -342,9 +359,12 @@
 				94056F99185E593500EB94BA /* Images.xcassets in Resources */,
 				94056F91185E593500EB94BA /* Main_iPhone.storyboard in Resources */,
 				9417A7E61867DDD600D9D37B /* VERSION in Resources */,
+				2009C09019E97ED6009756A1 /* middle.png in Resources */,
 				94056F88185E593500EB94BA /* InfoPlist.strings in Resources */,
 				2076C53419C03FF80018A5CF /* Pods.xcconfig in Resources */,
+				2009C09219E97ED6009756A1 /* inner.png in Resources */,
 				9417A7E51867DDD600D9D37B /* CHANGELOG in Resources */,
+				2009C09419E97FA2009756A1 /* outer.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,4 +1,4 @@
-//
+    //
 //  CoreGraphicsWaveformViewController.m
 //  EZAudioCoreGraphicsWaveformExample
 //
@@ -19,6 +19,9 @@
 @property (nonatomic,weak) IBOutlet UILabel *lblDbspl;
 @property (nonatomic,weak) IBOutlet UILabel *lblsamplesSent;
 @property (nonatomic,weak) IBOutlet UILabel *lbl;
+@property (nonatomic, weak) IBOutlet UIImageView *innerTicker;
+@property (nonatomic, weak) IBOutlet UIImageView *middleTicker;
+@property (nonatomic, weak) IBOutlet UIImageView *outerTicker;
 @end
 
 @implementation CoreGraphicsWaveformViewController
@@ -48,7 +51,18 @@
 #pragma mark - Initialize View Controller Here
 -(void)initializeViewController {
   // Create an instance of the microphone and tell it to use this view controller instance as the delegate
-    self.microphone = [EZMicrophone microphoneWithDelegate:self];
+    
+    AudioStreamBasicDescription dataFormat;
+    dataFormat.mSampleRate = 10;
+    dataFormat.mFormatID = kAudioFormatLinearPCM;
+    dataFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsBigEndian;
+    dataFormat.mBytesPerPacket = 4;
+    dataFormat.mFramesPerPacket = 1;
+    dataFormat.mBytesPerFrame = 4;
+    dataFormat.mChannelsPerFrame = 2;
+    dataFormat.mBitsPerChannel = 8;
+    
+    self.microphone = [EZMicrophone microphoneWithDelegate:self withAudioStreamBasicDescription:dataFormat];
     totalDbaSampleCount = 0;
     totalDba = 0;
     samplesSent = 0;
@@ -116,6 +130,52 @@
 	NSLog(@"Update failed with error: %@", error);
 }
 
+- (void) animateInner
+{
+    float rotations = 1.0;
+    int duration = 1;
+    CABasicAnimation* rotationAnimation;
+    rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotationAnimation.toValue = [NSNumber numberWithFloat: M_PI * 2.0 /* full rotation*/ * rotations * duration ];
+    rotationAnimation.duration = duration;
+    rotationAnimation.cumulative = YES;
+    rotationAnimation.repeatCount = 1.0 * 60 * 60;
+    rotationAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+
+    
+    [_innerTicker.layer addAnimation:rotationAnimation forKey:@"rotationAnimation"];
+}
+
+- (void) animateMiddle
+{
+    float rotations = 1.0 / 60;
+    int duration = 1;
+    CABasicAnimation* rotationAnimation;
+    rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotationAnimation.toValue = [NSNumber numberWithFloat: M_PI * 2.0 /* full rotation*/ * rotations * duration ];
+    rotationAnimation.duration = duration;
+    rotationAnimation.cumulative = YES;
+    rotationAnimation.repeatCount = 1.0 * 60 * 60;
+    
+    
+    [_middleTicker.layer addAnimation:rotationAnimation forKey:@"rotationAnimation"];
+}
+
+- (void) animateOuter
+{
+    float rotations = 1.0 / 60 / 20;
+    int duration = 1;
+    CABasicAnimation* rotationAnimation;
+    rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotationAnimation.toValue = [NSNumber numberWithFloat: M_PI * 2.0 /* full rotation*/ * rotations * duration ];
+    rotationAnimation.duration = duration;
+    rotationAnimation.cumulative = YES;
+    rotationAnimation.repeatCount = 1.0 * 60 * 60;
+    
+    
+    [_outerTicker.layer addAnimation:rotationAnimation forKey:@"rotationAnimation"];
+}
+
 #pragma mark - Customize the Audio Plot
 - (void)viewDidLoad
 {
@@ -124,10 +184,10 @@
   /*
    Customizing the audio plot's look
    */
-  // Background color
-  self.audioPlot.backgroundColor = [UIColor colorWithRed:0.984 green:0.471 blue:0.525 alpha:1.0];
+  // Background colo
+  self.audioPlot.backgroundColor = [UIColor colorWithRed:0.9 green:0.471 blue:0.525 alpha:0];
   // Waveform color
-  self.audioPlot.color           = [UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:1.0];
+  self.audioPlot.color           = [UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:0.5];
   // Plot type
   self.audioPlot.plotType        = EZPlotTypeBuffer;
   
@@ -136,6 +196,10 @@
    */
   [self.microphone startFetchingAudio];
   self.microphoneTextLabel.text = @"Microphone On";
+    
+    [self animateInner];
+    [self animateMiddle];
+    [self animateOuter];
     
 }
 
@@ -150,22 +214,8 @@
     case 0:
       [self drawBufferPlot];
       break;
-    case 1:
-      [self drawRollingPlot];
-      break;
     default:
       break;
-  }
-}
-
--(void)toggleMicrophone:(id)sender {
-  if( ![(UISwitch*)sender isOn] ){
-    [self.microphone stopFetchingAudio];
-    self.microphoneTextLabel.text = @"Microphone Off";
-  }
-  else {
-    [self.microphone startFetchingAudio];
-    self.microphoneTextLabel.text = @"Microphone On";
   }
 }
 
@@ -189,23 +239,16 @@
   // Change the plot type to the buffer plot
   self.audioPlot.plotType = EZPlotTypeBuffer;
   // Don't mirror over the x-axis
-  self.audioPlot.shouldMirror = NO;
-  // Don't fill
-  self.audioPlot.shouldFill = NO;
-}
-
-/*
- Give the classic mirrored, rolling waveform look
- */
--(void)drawRollingPlot {
-  self.audioPlot.plotType = EZPlotTypeRolling;
-  self.audioPlot.shouldFill = YES;
   self.audioPlot.shouldMirror = YES;
+  // Don't fill
+  self.audioPlot.shouldFill = YES;
 }
 
 -(void)addStats {
     
 }
+
+int samplePruining = 0;
 
 #pragma mark - EZMicrophoneDelegate
 #warning Thread Safety
@@ -217,9 +260,18 @@ withNumberOfChannels:(UInt32)numberOfChannels {
   // Getting audio data as an array of float buffer arrays. What does that mean? Because the audio is coming in as a stereo signal the data is split into a left and right channel. So buffer[0] corresponds to the float* data for the left channel while buffer[1] corresponds to the float* data for the right channel.
   
   // See the Thread Safety warning above, but in a nutshell these callbacks happen on a separate audio thread. We wrap any UI updating in a GCD block on the main thread to avoid blocking that audio flow.
+
+    
     
     dispatch_async(dispatch_get_main_queue(),^{
+        // All the audio plot needs is the buffer data (float*) and the size. Internally the audio plot will handle all the drawing related code, history management, and freeing its own resources. Hence, one badass line of code gets you a pretty plot :)
+        [self.audioPlot updateBuffer:buffer[0] withBufferSize:bufferSize];
+        samplePruining += 1;
         
+       /* if(samplePruining % 10 != 0){
+            return;
+        }*/
+            
         // Setup the sample start time
         if(sampleStart == nil){
             sampleStart = [NSDate date];
@@ -251,14 +303,22 @@ withNumberOfChannels:(UInt32)numberOfChannels {
         //  NSLog(@"mean is %10f (raw) %10f (db)", rawMeanVal, dbMeanVal);
         totalDba += sampleMeanDba;
         totalDbaSampleCount = totalDbaSampleCount + 1;
-        NSNumber *dba = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount];
-        NSNumber *dbspl = [NSNumber numberWithFloat:totalDba / totalDbaSampleCount + 150];
+        NSNumber *dba = [NSNumber numberWithInt:totalDba / totalDbaSampleCount];
+        float fdbspl = totalDba / totalDbaSampleCount + 150;
+        NSNumber *dbspl = [NSNumber numberWithInt:fdbspl];
+        
+        
         self.lblDba.text = [NSString stringWithFormat: @"%@ dba", dba];
-        self.lblDbspl.text = [NSString stringWithFormat: @"%@ dbspl", dbspl];
+        self.lblDbspl.text = [NSString stringWithFormat: @"%@", dbspl];
         self.lblsamplesSent.text = [NSString stringWithFormat: @"%d samples sent", samplesSent];
         
+        float redness = fdbspl / 100;
+        float greenness = 1 - redness;
+        self.view.backgroundColor = [UIColor colorWithRed:redness green:greenness blue:0 alpha:1];
+        audioPlot.backgroundColor = [UIColor colorWithRed:redness green:greenness blue:0 alpha:1];
+        
         NSTimeInterval sampleDuration = [currentTime timeIntervalSinceDate:sampleStart];
-        if(sampleDuration > 5.0){
+        if(sampleDuration > 60 * 20){
 
             NSDateFormatter* eventDateTime = [[NSDateFormatter alloc] init];
             eventDateTime.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
@@ -267,6 +327,8 @@ withNumberOfChannels:(UInt32)numberOfChannels {
             NSLog(@"ISO-8601 date: %@", formattedDateString);
             
             sampleStart = currentTime;
+            
+            return;
             
             NSDictionary* headers = @{@"Content-Type": @"application/json",
                                       @"Authorization": writeToken};
@@ -290,8 +352,8 @@ withNumberOfChannels:(UInt32)numberOfChannels {
                 [request setBody:[NSJSONSerialization dataWithJSONObject:event options:0 error:nil]];
             }] asJsonAsync:^(UNIHTTPJsonResponse* response, NSError *error) {
                 // This is the asyncronous callback block
-                int result = response.code;
-                NSLog(@"Tried to send event with result %d", result);
+                NSInteger result = response.code;
+                NSLog(@"Tried to send event with result %ld", (long)result);
                 if(result == 200){
                     samplesSent += 1;
                 }
@@ -300,8 +362,7 @@ withNumberOfChannels:(UInt32)numberOfChannels {
             totalDba = 0;
         }
         NSLog(@"count %d %f (raw: %f)", totalDbaSampleCount, totalDba / totalDbaSampleCount + 150, sampleMeanDba);
-    // All the audio plot needs is the buffer data (float*) and the size. Internally the audio plot will handle all the drawing related code, history management, and freeing its own resources. Hence, one badass line of code gets you a pretty plot :)
-    [self.audioPlot updateBuffer:buffer[0] withBufferSize:bufferSize];
+    
       
   });
 }

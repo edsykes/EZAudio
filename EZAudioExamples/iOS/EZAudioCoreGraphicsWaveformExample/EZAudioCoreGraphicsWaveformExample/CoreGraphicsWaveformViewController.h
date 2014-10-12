@@ -32,12 +32,13 @@
 /**
  The CoreGraphics based audio plot
  */
-@property (nonatomic,weak) IBOutlet EZAudioPlot *audioPlot;
+@property (nonatomic,weak) IBOutlet EZAudioPlotGL *audioPlot;
 
 /**
  The microphone component
  */
 @property (nonatomic,strong) EZMicrophone *microphone;
+	
 
 
 #pragma mark - Actions
